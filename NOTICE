@@ -1,0 +1,34 @@
+Arniko Security Platform
+Copyright 2026 Dirgha LLC
+
+This product includes software developed at
+Dirgha LLC (https://dirgha.ai).
+
+────────────────────────────────────────────────────────────────────
+Third-party attributions
+────────────────────────────────────────────────────────────────────
+
+Arniko incorporates ideas and structural patterns from DeepTeam
+(https://github.com/confident-ai/deepteam), Copyright Confident AI
+Inc., licensed under the Apache License, Version 2.0. Specifically,
+the taxonomy of LLM-oriented vulnerabilities and attack primitives
+that informs `src/detectors/` and parts of `src/scanners/llm*` traces
+to the DeepTeam corpus. Original DeepTeam contributors are gratefully
+acknowledged.
+
+Arniko bundles or optionally depends on the following third-party
+software, each under its own license:
+
+  - Hono               MIT          https://hono.dev
+  - drizzle-orm        Apache-2.0   https://orm.drizzle.team
+  - @xenova/transformers Apache-2.0 https://github.com/xenova/transformers.js
+  - pg                 MIT          https://node-postgres.com
+  - zod                MIT          https://zod.dev
+  - @hono/node-server  MIT          https://github.com/honojs/node-server
+  - @huggingface/transformers Apache-2.0 (optional peer dep)
+  - ln-service         MIT          (optional peer dep)
+
+Arniko also invokes external scanner CLIs when present on the PATH
+(e.g. gitleaks, bandit, trivy, semgrep, grype, checkov). Each such
+tool remains under its own license; Arniko wraps their output but
+does not redistribute them.

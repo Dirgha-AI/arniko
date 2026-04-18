@@ -1,0 +1,85 @@
+{
+  "name": "@dirgha/arniko",
+  "version": "0.1.0",
+  "description": "Arniko — open-source AI security scanning platform. 19 scanner adapters, agent-assisted triage, real-time dashboard.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "arniko": "dist/cli.js"
+  },
+  "license": "Apache-2.0",
+  "author": "Dirgha AI <team@dirgha.ai>",
+  "homepage": "https://dirgha.ai/arniko",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dirghaai/arniko.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dirghaai/arniko/issues"
+  },
+  "keywords": [
+    "security",
+    "scanner",
+    "llm-security",
+    "vulnerability-scanner",
+    "red-team",
+    "secrets-scanner",
+    "sast",
+    "dast",
+    "compliance",
+    "dirgha"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "prepublishOnly": "tsc"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "CLA.md",
+    "CONTRIBUTING.md"
+  ],
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@xenova/transformers": "^2.17.2",
+    "drizzle-orm": "^0.41.0",
+    "hono": "^4.6.0",
+    "pg": "^8.13.0",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "@huggingface/transformers": "^3.0.0",
+    "ln-service": "^58.0.3"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    },
+    "ln-service": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
