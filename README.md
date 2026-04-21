@@ -263,41 +263,61 @@ Arniko's LLM vulnerability taxonomy and several attack primitives trace to
 (Apache-2.0, https://github.com/confident-ai/deepteam). Full attribution
 lives in [`NOTICE`](./NOTICE). Thank you to the DeepTeam maintainers.
 
+## Sister projects in the Dirgha OS
+
+This repo is one of five that make up the open-source surface of the Dirgha OS. Each repo stands on its own; together they compose a full stack for builders.
+
+| Repo | What it does | License |
+|---|---|---|
+| [`dirgha-code`](https://github.com/dirghaai/dirgha-code) | Terminal-native AI coding agent. BYOK, 14 providers, 43 tools, fleet-mode multi-agent. | FSL-1.1-MIT |
+| [`creator-studio`](https://github.com/dirghaai/creator-studio) | Backend API for the creator economy. Monetization, campaigns, memberships, social integrations. | Apache-2.0 |
+| [`writer-studio`](https://github.com/dirghaai/writer-studio) | Backend API for writing — science, fiction, screenplays, research. Binder + AI research + RAG. | Apache-2.0 |
+| [`abundance-protocol`](https://github.com/dirghaai/abundance-protocol) | DePIN for distributed AI inference. Peer-to-peer compute, Lightning settlement, on-chain governance. | Apache-2.0 |
+
+Visit the umbrella org at [github.com/dirghaai](https://github.com/dirghaai) or the product site at [dirgha.ai](https://dirgha.ai).
+
 ## License
 
-**Apache License 2.0.** Free for any use — personal, commercial, internal,
-hosted, redistributed. Full text in [`LICENSE`](./LICENSE).
+**Apache License 2.0** — free for any use: personal, commercial, research, hosted, redistributed. No hidden restrictions. Full text in [`LICENSE`](./LICENSE).
 
-Commercial extensions (proprietary attack packs, managed scanning service,
-SOC 2 report sharing, priority support): email `sales@dirgha.ai`.
+**Dirgha LLC owns the “Dirgha” name, logo, and product family** as registered trademarks. The code is open — the brand isn't. Forks of this repository must rename the product and remove Dirgha branding before distribution. Reasonable nominative use (“a fork of Arniko”) is fine.
 
-## Trademark
+See [`LICENSE`](./LICENSE) for the full legal text. Related documents:
 
-"Arniko" and "Dirgha" are trademarks of Dirgha LLC. The Apache 2.0 license
-does not grant you rights to the Arniko or Dirgha names, logos, or branding.
+- [`SECURITY.md`](./SECURITY.md) — vulnerability disclosure policy.
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
+- [`SUPPORT.md`](./SUPPORT.md) — where to ask for help.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to send a PR.
 
-## Security
 
-Found a vulnerability in Arniko itself? Email `security@dirgha.ai`. We
-respond within 48 hours. Do NOT open a public issue.
+## Contribute
 
-## Support the project ♡
+- **Code** — fork, branch, PR against `main`. Recipes in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+- **Bugs** — file an issue using the [bug template](https://github.com/dirghaai/arniko/issues/new?template=bug.md).
+- **Features** — file an issue using the [feature template](https://github.com/dirghaai/arniko/issues/new?template=feature.md).
+- **Questions** — open a [Discussion](https://github.com/dirghaai/arniko/discussions) rather than an issue.
+- **Security** — email `security@dirgha.ai`. Do NOT file a public issue for vulnerabilities.
+- **Sponsor** — [dirgha.ai/contribute](https://dirgha.ai/contribute) · Lightning, GitHub Sponsors, OpenCollective.
 
-- <https://dirgha.ai/contribute>
-- [GitHub Sponsors](https://github.com/sponsors/dirghaai)
 
 ## Links
 
-- Website — <https://dirgha.ai/arniko>
-- Issues — <https://github.com/dirghaai/arniko/issues>
-- Security — security@dirgha.ai
-- Sales — sales@dirgha.ai
-- General — team@dirgha.ai
+| | |
+|---|---|
+| Website | [https://dirgha.ai/arniko](https://dirgha.ai/arniko) |
+| Repository | [github.com/dirghaai/arniko](https://github.com/dirghaai/arniko) |
+| Issues | [github.com/dirghaai/arniko/issues](https://github.com/dirghaai/arniko/issues) |
+| Discussions | [github.com/dirghaai/arniko/discussions](https://github.com/dirghaai/arniko/discussions) |
+| Security | `security@dirgha.ai` |
+| Enterprise | `enterprise@dirgha.ai` |
+| Press / general | `hello@dirgha.ai` |
 
 ---
 
-Built by Dirgha LLC in India. Named after Arniko of Nepal — the 13th-century
-master craftsman who brought the pagoda to Tibet and China. A scanner of
-ages, inspecting what others overlooked.
+**Arniko** is part of the Dirgha OS — open-source infrastructure for builders, shipped by a small bootstrapped team.
 
-Copyright © 2026 Dirgha LLC.
+Named after Arniko of Nepal — the 13th-century master craftsman who brought the pagoda to Tibet and China. A scanner of ages, inspecting what others overlooked.
+
+Built by [Dirgha LLC](https://dirgha.ai) in India. Open to the world.
+
+Released under **Apache-2.0** · Copyright © 2026 Dirgha LLC · All third-party trademarks are property of their owners.
