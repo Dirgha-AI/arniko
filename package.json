@@ -1,14 +1,14 @@
 {
   "name": "@dirgha/arniko",
   "version": "0.1.0",
-  "description": "Arniko — open-source AI security scanning platform. 19 scanner adapters, agent-assisted triage, real-time dashboard.",
+  "description": "Arniko \u2014 open-source AI security scanning platform. 19 scanner adapters, agent-assisted triage, real-time dashboard.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "arniko": "dist/cli.js"
   },
   "license": "Apache-2.0",
-  "author": "Dirgha AI <team@dirgha.ai>",
+  "author": "Salik Shah <salik@dirgha.ai>",
   "homepage": "https://dirgha.ai/arniko",
   "repository": {
     "type": "git",
