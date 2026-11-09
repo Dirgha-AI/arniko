@@ -273,8 +273,7 @@ async function handleScan(args: ParsedArgs): Promise<number> {
     selectedTools = Object.keys(scanners || {});
     console.log(`${COLORS.dim}Running all ${selectedTools.length} scanners...${COLORS.reset}`);
   } else if (selectedTools.length === 0) {
-    console.error('Error: No tools specified. Use --tools or --all');
-    return 1;
+    selectedTools = ['semgrep', 'trufflehog', 'trivy', 'indirect-injection', 'agentic-security'];
   }
 
   // Initialize orchestrator

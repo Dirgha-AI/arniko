@@ -58,12 +58,11 @@ interface ResolveFindingResponse {
   message: string;
 }
 
-// DB singleton management
+// DB singleton management (falls back to zero-Postgres in-memory mode when ARNIKO_DATABASE_URL is unset)
 let dbInstance: ArnikoDb | null = null;
 const getDb = (): ArnikoDb => {
   if (!dbInstance) {
-    const dbUrl = process.env.ARNIKO_DATABASE_URL;
-    if (!dbUrl) throw new Error('ARNIKO_DATABASE_URL not set');
+    const dbUrl = process.env.ARNIKO_DATABASE_URL || '';
     dbInstance = new ArnikoDb(dbUrl);
   }
   return dbInstance;

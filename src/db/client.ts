@@ -72,15 +72,21 @@ export interface RiskScores {
 }
 
 export class ArnikoDb {
-  private pool: Pool;
+  private pool: Pool | null = null;
+  private memScans: ArnikoScan[] = [];
+  private memFindings: Map<string, ArnikoFinding[]> = new Map();
+  private memShieldEvents: ArnikoShieldEvent[] = [];
+  private memRiskScores: ArnikoRiskScore[] = [];
 
   constructor(connectionString: string) {
-    this.pool = new Pool({
-      connectionString,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+    if (connectionString && connectionString.trim().length > 0) {
+      this.pool = new Pool({
+        connectionString,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+    }
   }
 
   async createScan(
@@ -89,6 +95,20 @@ export class ArnikoDb {
     targetId: string,
     tools: string[]
   ): Promise<ArnikoScan> {
+    if (!this.pool) {
+      const row: ArnikoScan = {
+        id: `scan_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        user_id: userId,
+        target_type: targetType,
+        target_id: targetId,
+        tools,
+        status: 'pending',
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      this.memScans.unshift(row);
+      return row;
+    }
     const query = `
       INSERT INTO arniko_scans (user_id, target_type, target_id, tools, status)
       VALUES ($1, $2, $3, $4, 'pending')
@@ -109,6 +129,16 @@ export class ArnikoDb {
     durationMs?: number,
     error?: string
   ): Promise<void> {
+    if (!this.pool) {
+      const sc = this.memScans.find((s) => s.id === scanId);
+      if (sc) {
+        sc.status = status as ArnikoScan['status'];
+        sc.duration_ms = durationMs;
+        sc.error = error;
+        sc.updated_at = new Date();
+      }
+      return;
+    }
     const query = `
       UPDATE arniko_scans 
       SET status = $1, 
@@ -124,6 +154,28 @@ export class ArnikoDb {
     scanId: string,
     finding: FindingInput
   ): Promise<ArnikoFinding> {
+    if (!this.pool) {
+      const row: ArnikoFinding = {
+        id: `f_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        scan_id: scanId,
+        tool: finding.tool,
+        severity: (['critical', 'high', 'medium', 'low', 'info'].includes(finding.severity)
+          ? finding.severity
+          : 'info') as ArnikoFinding['severity'],
+        title: finding.title,
+        description: finding.description,
+        remediation: finding.remediation,
+        evidence: finding.evidence,
+        location: finding.location,
+        cwe: finding.cwe,
+        owasp: finding.owasp,
+        created_at: new Date(),
+      };
+      const list = this.memFindings.get(scanId) ?? [];
+      list.push(row);
+      this.memFindings.set(scanId, list);
+      return row;
+    }
     const query = `
       INSERT INTO arniko_findings 
         (scan_id, tool, severity, title, description, remediation, evidence, location, cwe, owasp)
@@ -154,6 +206,19 @@ export class ArnikoDb {
     inputHash: string,
     reason: string
   ): Promise<ArnikoShieldEvent> {
+    if (!this.pool) {
+      const row: ArnikoShieldEvent = {
+        id: `sh_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        user_id: userId,
+        event_type: eventType,
+        severity,
+        input_hash: inputHash,
+        reason,
+        created_at: new Date(),
+      };
+      this.memShieldEvents.unshift(row);
+      return row;
+    }
     const query = `
       INSERT INTO arniko_shield_events 
         (user_id, event_type, severity, input_hash, reason)
@@ -172,6 +237,9 @@ export class ArnikoDb {
   }
 
   async getFindings(scanId: string): Promise<ArnikoFinding[]> {
+    if (!this.pool) {
+      return this.memFindings.get(scanId) ?? [];
+    }
     const query = `
       SELECT * FROM arniko_findings 
       WHERE scan_id = $1 
@@ -193,6 +261,9 @@ export class ArnikoDb {
     userId: string,
     limit: number = 50
   ): Promise<ArnikoShieldEvent[]> {
+    if (!this.pool) {
+      return this.memShieldEvents.filter((e) => e.user_id === userId).slice(0, limit);
+    }
     const query = `
       SELECT * FROM arniko_shield_events 
       WHERE user_id = $1 
@@ -212,6 +283,34 @@ export class ArnikoDb {
     scores: RiskScores,
     trend: string
   ): Promise<ArnikoRiskScore> {
+    if (!this.pool) {
+      const existing = this.memRiskScores.find(
+        (r) => r.user_id === userId && r.app_id === appId
+      );
+      if (existing) {
+        existing.overall = scores.overall;
+        existing.injection = scores.injection;
+        existing.pii = scores.pii;
+        existing.cost = scores.cost;
+        existing.secret = scores.secret;
+        existing.trend = trend as ArnikoRiskScore['trend'];
+        existing.updated_at = new Date();
+        return existing;
+      }
+      const row: ArnikoRiskScore = {
+        user_id: userId,
+        app_id: appId,
+        overall: scores.overall,
+        injection: scores.injection,
+        pii: scores.pii,
+        cost: scores.cost,
+        secret: scores.secret,
+        trend: trend as ArnikoRiskScore['trend'],
+        updated_at: new Date(),
+      };
+      this.memRiskScores.unshift(row);
+      return row;
+    }
     const query = `
       INSERT INTO arniko_risk_scores 
         (user_id, app_id, overall, injection, pii, cost, secret, trend, updated_at)
@@ -243,6 +342,9 @@ export class ArnikoDb {
   }
 
   async getScans(userId: string, limit: number = 20): Promise<ArnikoScan[]> {
+    if (!this.pool) {
+      return this.memScans.filter((s) => s.user_id === userId).slice(0, limit);
+    }
     const query = `
       SELECT * FROM arniko_scans 
       WHERE user_id = $1 
@@ -257,7 +359,9 @@ export class ArnikoDb {
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.pool) {
+      await this.pool.end();
+    }
   }
 
   /**
@@ -266,6 +370,9 @@ export class ArnikoDb {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async query<T extends Record<string, any> = Record<string, any>>(sql: string, params?: any[]): Promise<QueryResult<T>> {
+    if (!this.pool) {
+      return { rows: [] as T[], command: 'SELECT', rowCount: 0, oid: 0, fields: [] };
+    }
     return this.pool.query<T>(sql, params);
   }
 }

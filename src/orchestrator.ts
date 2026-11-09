@@ -92,7 +92,24 @@ type DatabaseClient = NodePgDatabase<typeof schema>;
 
 export class ArnikoOrchestrator {
   private config: ArnikoConfig;
-  private db: DatabaseClient;
+  private db: DatabaseClient | null = null;
+  private memScans: Map<string, {
+    id: string;
+    userId: string;
+    targetType: string;
+    targetId: string;
+    tools: string[];
+    status: ScanStatus;
+    durationMs?: number;
+    error?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    completedAt?: Date;
+  }> = new Map();
+  private memFindings: Map<string, Finding[]> = new Map();
+  private cliTarget: string = '.';
+  private cliTools: string[] = [];
+  private cliScanId: string | null = null;
 
   /** Run any scanner and map ScanFinding[] → Finding[] */
   private async runAndMap(scanner: AnyScanner, targetId: string, targetType: string): Promise<Finding[]> {
@@ -103,32 +120,88 @@ export class ArnikoOrchestrator {
       tool: f.tool,
       severity: ((f.severity as string) === 'informational' ? 'info' : f.severity) as Finding['severity'],
       message: `${f.title}: ${f.description}`,
-      file: f.location?.file,
+      title: f.title,
+      file: f.location?.file ?? targetId,
       line: f.location?.line,
       rule: f.cwe,
+      ruleId: f.cwe,
       ...f.metadata,
     }));
   }
 
-  constructor(config: ArnikoConfig, db?: DatabaseClient) {
-    this.config = config;
-    
+  constructor(
+    config: ArnikoConfig | { tools?: string[]; target?: string; concurrency?: number } = { scanners: {} },
+    db?: DatabaseClient
+  ) {
+    if ('scanners' in config && config.scanners) {
+      this.config = config as ArnikoConfig;
+    } else {
+      const cliCfg = config as { tools?: string[]; target?: string };
+      const toolList = cliCfg.tools ?? [];
+      const scannersMap: ArnikoConfig['scanners'] = {};
+      for (const t of toolList) {
+        scannersMap[t] = { enabled: true };
+      }
+      this.config = { scanners: scannersMap };
+      this.cliTools = toolList;
+      this.cliTarget = cliCfg.target ?? '.';
+    }
+
     if (db) {
       this.db = db;
     } else {
-      // Create default connection if not provided
       const connectionString = process.env.ARNIKO_DATABASE_URL || process.env.DATABASE_URL || '';
-      if (!connectionString) {
-        throw new Error('Database connection string required. Set ARNIKO_DATABASE_URL or DATABASE_URL env variable.');
+      if (connectionString) {
+        const pool = new Pool({
+          connectionString,
+          max: 20,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 2000,
+        });
+        this.db = drizzle(pool, { schema });
+      } else {
+        // Zero-Postgres in-memory store for offline CLI / local scans (fixes Issue #2)
+        this.db = null;
       }
-      const pool = new Pool({
-        connectionString,
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      });
-      this.db = drizzle(pool, { schema });
     }
+  }
+
+  /**
+   * Backward-compatible CLI `.start()` helper used by `src/cli.ts`.
+   */
+  start(): void {
+    this.startScan('cli-user', 'repository', this.cliTarget, this.cliTools)
+      .then((id) => {
+        this.cliScanId = id;
+      })
+      .catch(() => {});
+  }
+
+  /**
+   * Backward-compatible CLI `.getState()` helper used by `src/cli.ts`.
+   */
+  getState(): { status: 'idle' | 'running' | 'completed' | 'failed'; findings: any[]; progress: number; error?: string } {
+    if (!this.cliScanId) {
+      return { status: 'running', findings: [], progress: 10 };
+    }
+    const mem = this.memScans.get(this.cliScanId);
+    if (!mem) {
+      return { status: 'running', findings: [], progress: 50 };
+    }
+    return {
+      status: mem.status === 'pending' ? 'running' : mem.status,
+      findings: (this.memFindings.get(this.cliScanId) ?? []).map((f) => ({
+        severity: f.severity === 'info' ? 'low' : f.severity,
+        tool: f.tool,
+        title: f.title || f.message,
+        file: f.file || this.cliTarget,
+        line: f.line,
+        message: f.message,
+        ruleId: f.rule || f.ruleId,
+      })),
+      progress: mem.status === 'completed' || mem.status === 'failed' ? 100 : 60,
+      error: mem.error,
+    };
   }
 
   async startScan(
@@ -139,9 +212,9 @@ export class ArnikoOrchestrator {
   ): Promise<string> {
     const scanId = randomUUID();
     const startedAt = new Date();
+    this.cliScanId = scanId;
 
-    // Create scan record in database
-    await this.db.insert(schema.scans).values({
+    this.memScans.set(scanId, {
       id: scanId,
       userId,
       targetType,
@@ -151,22 +224,46 @@ export class ArnikoOrchestrator {
       createdAt: startedAt,
       updatedAt: startedAt,
     });
+    this.memFindings.set(scanId, []);
+
+    if (this.db) {
+      await this.db.insert(schema.scans).values({
+        id: scanId,
+        userId,
+        targetType,
+        targetId,
+        tools,
+        status: 'running',
+        createdAt: startedAt,
+        updatedAt: startedAt,
+      });
+    }
 
     // Run scanners asynchronously
     this.runScanners(scanId, targetType, targetId, tools, startedAt).catch(async (error) => {
       console.error(`Scan ${scanId} failed:`, error);
       const completedAt = new Date();
       const durationMs = completedAt.getTime() - startedAt.getTime();
-      
-      await this.db.update(schema.scans)
-        .set({
-          status: 'failed',
-          error: error.message,
-          durationMs,
-          completedAt,
-          updatedAt: completedAt,
-        })
-        .where(eq(schema.scans.id, scanId));
+      const mem = this.memScans.get(scanId);
+      if (mem) {
+        mem.status = 'failed';
+        mem.error = error.message;
+        mem.durationMs = durationMs;
+        mem.completedAt = completedAt;
+        mem.updatedAt = completedAt;
+      }
+      if (this.db) {
+        await this.db
+          .update(schema.scans)
+          .set({
+            status: 'failed',
+            error: error.message,
+            durationMs,
+            completedAt,
+            updatedAt: completedAt,
+          })
+          .where(eq(schema.scans.id, scanId));
+      }
     });
 
     return scanId;
@@ -187,9 +284,8 @@ export class ArnikoOrchestrator {
         if (!this.config.scanners[tool]?.enabled) continue;
 
         const toolFindings = await this.runScanner(tool, targetId, targetType);
-        
-        // Store findings in database
-        if (toolFindings.length > 0) {
+
+        if (toolFindings.length > 0 && this.db) {
           for (const finding of toolFindings) {
             await this.db.insert(schema.findings).values({
               id: randomUUID(),
@@ -204,38 +300,58 @@ export class ArnikoOrchestrator {
             });
           }
         }
-        
+
         findings.push(...toolFindings);
       }
 
       const completedAt = new Date();
       const durationMs = completedAt.getTime() - startTime;
+      this.memFindings.set(scanId, findings);
+      const mem = this.memScans.get(scanId);
+      if (mem) {
+        mem.status = 'completed';
+        mem.durationMs = durationMs;
+        mem.completedAt = completedAt;
+        mem.updatedAt = completedAt;
+      }
 
-      // Update scan status to completed
-      await this.db.update(schema.scans)
-        .set({
-          status: 'completed',
-          durationMs,
-          completedAt,
-          updatedAt: completedAt,
-        })
-        .where(eq(schema.scans.id, scanId));
+      if (this.db) {
+        await this.db
+          .update(schema.scans)
+          .set({
+            status: 'completed',
+            durationMs,
+            completedAt,
+            updatedAt: completedAt,
+          })
+          .where(eq(schema.scans.id, scanId));
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const completedAt = new Date();
       const durationMs = completedAt.getTime() - startTime;
+      const mem = this.memScans.get(scanId);
+      if (mem) {
+        mem.status = 'failed';
+        mem.error = errorMessage;
+        mem.durationMs = durationMs;
+        mem.completedAt = completedAt;
+        mem.updatedAt = completedAt;
+      }
 
-      // Update scan status to failed
-      await this.db.update(schema.scans)
-        .set({
-          status: 'failed',
-          error: errorMessage,
-          durationMs,
-          completedAt,
-          updatedAt: completedAt,
-        })
-        .where(eq(schema.scans.id, scanId));
-      
+      if (this.db) {
+        await this.db
+          .update(schema.scans)
+          .set({
+            status: 'failed',
+            error: errorMessage,
+            durationMs,
+            completedAt,
+            updatedAt: completedAt,
+          })
+          .where(eq(schema.scans.id, scanId));
+      }
+
       throw error;
     }
   }
@@ -284,6 +400,9 @@ export class ArnikoOrchestrator {
 
   async getStatus(scanId: string): Promise<ScanStatus | null> {
     if (!this.isValidUUID(scanId)) return null;
+    if (!this.db) {
+      return this.memScans.get(scanId)?.status ?? null;
+    }
     const result = await this.db.query.scans.findFirst({
       where: eq(schema.scans.id, scanId),
     });
@@ -297,6 +416,17 @@ export class ArnikoOrchestrator {
 
   async getFindings(scanId: string): Promise<FindingsResponse | null> {
     if (!this.isValidUUID(scanId)) return null;
+    if (!this.db) {
+      const mem = this.memScans.get(scanId);
+      if (!mem) return null;
+      const list = this.memFindings.get(scanId) ?? [];
+      return {
+        scanId,
+        status: mem.status,
+        findings: list,
+        count: list.length,
+      };
+    }
     const scan = await this.db.query.scans.findFirst({
       where: eq(schema.scans.id, scanId),
     });
@@ -308,7 +438,6 @@ export class ArnikoOrchestrator {
     const findingsResult = await this.db.query.findings.findMany({
       where: eq(schema.findings.scanId, scanId),
       orderBy: [
-        // Order by severity: critical first
         desc(schema.findings.severity),
         desc(schema.findings.createdAt),
       ],
@@ -334,6 +463,10 @@ export class ArnikoOrchestrator {
 
   async isComplete(scanId: string): Promise<boolean> {
     if (!this.isValidUUID(scanId)) return false;
+    if (!this.db) {
+      const mem = this.memScans.get(scanId);
+      return mem ? mem.status === 'completed' || mem.status === 'failed' : false;
+    }
     const scan = await this.db.query.scans.findFirst({
       where: eq(schema.scans.id, scanId),
     });
@@ -349,6 +482,19 @@ export class ArnikoOrchestrator {
    * Get scan details including duration and error information
    */
   async getScanDetails(scanId: string): Promise<ScanResult | null> {
+    if (!this.db) {
+      const mem = this.memScans.get(scanId);
+      if (!mem) return null;
+      return {
+        scanId: mem.id,
+        status: mem.status,
+        findings: this.memFindings.get(scanId) ?? [],
+        startedAt: mem.createdAt,
+        completedAt: mem.completedAt,
+        error: mem.error,
+        durationMs: mem.durationMs,
+      };
+    }
     const scan = await this.db.query.scans.findFirst({
       where: eq(schema.scans.id, scanId),
       with: {
@@ -383,6 +529,20 @@ export class ArnikoOrchestrator {
    * List scans for a user with optional pagination
    */
   async listScans(userId: string, limit: number = 20): Promise<ScanResult[]> {
+    if (!this.db) {
+      return [...this.memScans.values()]
+        .filter((s) => s.userId === userId)
+        .slice(0, limit)
+        .map((s) => ({
+          scanId: s.id,
+          status: s.status,
+          findings: [],
+          startedAt: s.createdAt,
+          completedAt: s.completedAt,
+          error: s.error,
+          durationMs: s.durationMs,
+        }));
+    }
     const scansResult = await this.db.query.scans.findMany({
       where: eq(schema.scans.userId, userId),
       orderBy: [desc(schema.scans.createdAt)],

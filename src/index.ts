@@ -1,12 +1,13 @@
 /**
- * @dirgha/arniko — AI Security Platform
+ * @dirgha/arniko v0.2.0 — Hybrid Rust + TypeScript AI & Supply-Chain Security Platform
  *
  * Main entry point. Exports all public APIs.
  */
 
-export { ScanOrchestrator } from './orchestrator.js';
-export { arnikoMiddleware } from './middleware/arnikoMiddleware.js';
-export { createArnikoRoutes } from './api/routes.js';
+export { ScanOrchestrator, ArnikoOrchestrator } from './orchestrator.js';
+export { arnikoMiddleware, SecurityShield } from './middleware/arnikoMiddleware.js';
+export type { ShieldConfig, ShieldCheckResult, ShieldResponseFilterResult } from './middleware/arnikoMiddleware.js';
+export { createArnikoRoutes, createScanRoutes } from './api/routes.js';
 export { GarakScanner, createGarakScanner } from './scanners/garak.js';
 export { SemgrepScanner, createSemgrepScanner } from './scanners/semgrep.js';
 export { TruffleHogScanner, createTruffleHogScanner } from './scanners/trufflehog.js';

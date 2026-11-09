@@ -1,32 +1,47 @@
 {
   "name": "@dirgha/arniko",
-  "version": "0.1.0",
-  "description": "Arniko \u2014 open-source AI security scanning platform. 19 scanner adapters, agent-assisted triage, real-time dashboard.",
+  "version": "0.2.0",
+  "description": "Arniko v2.0 — Hybrid Rust + TypeScript AI & Supply-Chain Security Scanner, 13-CWE Symbolic AST Patcher, DTrackAuditor / EU-CRA CSAF 2.0 VEX Engine, and Lokahi WASM Shield.",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware/arnikoMiddleware.d.ts",
+      "default": "./dist/middleware/arnikoMiddleware.js"
+    }
+  },
   "bin": {
     "arniko": "dist/cli.js"
   },
-  "license": "Apache-2.0",
-  "author": "Salik Shah <salik@dirgha.ai>",
+  "license": "Apache-2.0 OR MPL-2.0",
+  "author": "Salik Shah <salik@dirgha.ai> & Sabin Ranjit <sabin@dirgha.ai>",
   "homepage": "https://dirgha.ai/arniko",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dirghaai/arniko.git"
+    "url": "git+https://github.com/Dirgha-AI/arniko.git"
   },
   "bugs": {
-    "url": "https://github.com/dirghaai/arniko/issues"
+    "url": "https://github.com/Dirgha-AI/arniko/issues"
   },
   "keywords": [
     "security",
     "scanner",
+    "sarif",
+    "sbom",
+    "cyclonedx",
+    "spdx",
+    "vex",
+    "eu-cra",
+    "dependency-track",
+    "dtrack-auditor",
     "llm-security",
-    "vulnerability-scanner",
-    "red-team",
-    "secrets-scanner",
-    "sast",
-    "dast",
-    "compliance",
+    "mcp-security",
+    "lokahi",
     "dirgha"
   ],
   "engines": {
@@ -36,6 +51,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:rust": "cargo test --workspace",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
@@ -47,8 +63,12 @@
   },
   "files": [
     "dist",
+    "wasm",
+    "crates",
+    "Cargo.toml",
     "README.md",
     "LICENSE",
+    "LICENSE-MPL-2.0",
     "NOTICE",
     "CLA.md",
     "CONTRIBUTING.md"

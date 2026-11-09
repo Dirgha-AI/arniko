@@ -37,6 +37,30 @@ export { CheckovScanner } from './checkov.js';
 export { FalcoScanner } from './falco.js';
 
 // Supply Chain
-export { SocketScanner } from './socket.js';
-export { SnykScanner } from './snyk.js';
-export { OWASPDependencyCheckScanner } from './owaspDependencyCheck.js';
+export const scanners: Record<string, any> = {
+  garak: 'GarakScanner',
+  semgrep: 'SemgrepScanner',
+  trufflehog: 'TruffleHogScanner',
+  trivy: 'TrivyScanner',
+  bandit: 'BanditScanner',
+  codeql: 'CodeQLScanner',
+  gitleaks: 'GitLeaksScanner',
+  checkov: 'CheckovScanner',
+  falco: 'FalcoScanner',
+  grype: 'GrypeScanner',
+  nemoGuardrails: 'NeMoGuardrailsScanner',
+  purpleLlama: 'PurpleLlamaScanner',
+  promptfoo: 'PromptfooScanner',
+  snyk: 'SnykScanner',
+  socket: 'SocketScanner',
+  vigil: 'VigilScanner',
+  'owasp-dependency-check': 'OWASPDependencyCheckScanner',
+  'llm-guard': 'LLMGuardScanner',
+  rebuff: 'RebuffScanner',
+  deepteam: 'DeepTeamScanner',
+  'agentic-security': 'AgenticSecurityScanner',
+  'indirect-injection': 'IndirectInjectionScanner',
+  'tool-attestation': 'ToolAttestationScanner',
+  'owasp-llm-top10': 'OwaspLlmTop10Scanner',
+  'slsa-model': 'ModelProvenance',
+};

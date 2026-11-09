@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/arniko-audit",
+    "crates/dtrack-rs",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+license = "Apache-2.0 OR MPL-2.0"
+repository = "https://github.com/Dirgha-AI/arniko"
+authors = ["Salik Shah <salik@dirgha.ai>", "Sabin Ranjit <sabin@dirgha.ai>"]
+keywords = ["security", "sarif", "sbom", "cyclonedx", "vex"]
+categories = ["command-line-utilities", "development-tools", "cryptography"]
+
+[workspace.dependencies]
+blake3 = "1.5"
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+hex = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
