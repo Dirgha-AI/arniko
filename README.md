@@ -1,3 +1,5 @@
+<div align="center">
+
 # Arniko
 
 **AI security scanner. Every tool, one unified report.**
@@ -6,6 +8,7 @@
 [![Tests: 56/56](https://img.shields.io/badge/tests-56%2F56%20passing-success?style=flat-square)](./tests)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%99%A1-ec4899?style=flat-square)](https://dirgha.ai/contribute)
 
+</div>
 ---
 
 Arniko is a security scanner for AI-era stacks. Run one command and it fans out across **36 best-in-class tools** — gitleaks, semgrep, trivy, bandit, checkov, snyk, grype, falco, deepteam, garak, llm-guard, purple llama, rebuff, promptfoo, and 22 others — covering LLMs, code, containers, infrastructure, and supply chain. Findings come back as one normalized stream; agents triage, rank, and propose fixes.
